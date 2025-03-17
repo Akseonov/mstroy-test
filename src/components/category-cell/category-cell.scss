@@ -1,0 +1,62 @@
+.category-cell {
+  --ag-row-group-indent-size: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.category-cell_arrow {
+  position: absolute;
+
+  &__close > span::before {
+    transform: rotate(-90deg);
+  }
+}
+
+.category-cell_label {
+  margin-left: 32px;
+  padding-left: calc(
+    var(--ag-indentation-level) * var(--ag-row-group-indent-size)
+  );
+}
+
+.category-cell_edit {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.category-cell_button {
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  color: white;
+  outline: none;
+
+  &:focus {
+    outline: none;
+  }
+
+  &__create {
+    background-color: blue;
+  }
+
+  &__remove {
+    background-color: red;
+    transform: rotate(45deg);
+  }
+
+  &:hover {
+    border: none;
+    outline: none;
+  }
+
+  & > svg {
+    width: 10px;
+    height: 10px;
+  }
+}

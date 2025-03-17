@@ -1,0 +1,63 @@
+proxy_cache_path /var/cache/nginx/avito levels=1:2 keys_zone=avito-cache:50m inactive=24h max_size=1G;
+proxy_cache_path /var/cache/nginx/ya levels=1:2 keys_zone=ya-cache:50m inactive=24h max_size=1G;
+
+server {
+    listen ${NGINX_PORT} default_server;
+    server_name _;
+
+    # Директория с скомпилированным приложением
+    root /app;
+    index index.html;
+
+    # Разрешаем OPTIONS для любых locations
+    include includes/cors.in;
+    include includes/options.in;
+
+    location / {
+      include includes/cors.in;
+      try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/vendor {
+        include includes/cors.in;
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ =404;
+    }
+
+    location /assets/index {
+        include includes/cors.in;
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ =404;
+    }
+
+    #location /api {
+    #    include includes/options.in;
+    #    include includes/cors.in;
+    #
+    #    set $upstream https://jsonplaceholder.typicode.com;
+    #    proxy_pass $upstream$request_uri;
+    #
+    #    proxy_buffering                    off;
+    #    proxy_set_header Host              $upstream;
+    #    proxy_set_header X-Real-IP         $remote_addr;
+    #    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    #    proxy_set_header X-Forwarded-Host  $server_name;
+    #    proxy_set_header X-Forwarded-Proto $scheme;
+    #}
+
+    #location /api {
+    #    # без понятия почему, но set слетает, если идет после rewrite
+    #    # $request_uri остается тем же и вместо него надо подставлять $1
+    #	set $upstream http://jsonplaceholder.typicode.com;
+    #	proxy_pass $upstream$1;
+    #
+    #	# заголовок для проверки того, что лежит в переменных
+    #	#add_header X-debug-message "$upstream, $request_uri, $1" always;
+    #
+    #	rewrite ^/api(.*)$ $1 break;
+    #
+    #	proxy_set_header Host jsonplaceholder.typicode.com;
+    #	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #    proxy_set_header X-Real-IP $remote_addr;
+    #}
+}
