@@ -5,4 +5,5 @@ interface TreeStoreItem {
   id: DataId;
   parent: Parent;
   label: string;
+  [key: string]: unknown;
 }

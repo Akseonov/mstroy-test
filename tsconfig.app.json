@@ -11,7 +11,7 @@
     "noUncheckedSideEffectImports": true,
     "paths": {
       "@src/*": ["./src/*"],
-      "@assets/*": ["./assets/*"]
+      "@assets/*": ["./src/assets/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]

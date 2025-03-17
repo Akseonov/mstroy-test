@@ -1,58 +1,229 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref, shallowRef } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
 import {
-  AllCommunityModule,
+  ClientSideRowModelModule,
   ModuleRegistry,
+  ValidationModule,
+  ColumnAutoSizeModule,
+  TextEditorModule,
+  RenderApiModule,
+  ColumnApiModule,
+  CellStyleModule,
+  themeAlpine,
   type ValueGetterParams,
+  type GridReadyEvent,
+  type CellChangedEvent,
+  type CellClassParams,
 } from "ag-grid-community";
+import {
+  type GetRowIdParams,
+  TreeDataModule,
+  PivotModule,
+  type ColDef,
+  type GridApi,
+} from "ag-grid-enterprise";
 
-// Register all Community features
-ModuleRegistry.registerModules([AllCommunityModule]);
+import CategoryCell from "@src/components/category-cell/CategoryCell.vue";
+import { useTreeStore } from "@src/composbles/useTreeStore.ts";
+import ArrowLeftIcon from "@assets/svg/arrow-left.svg?component";
 
-// Row Data: The data to be displayed.
-const rowData = ref<TreeStoreItem[]>([
-  { id: 1, parent: null, label: "Айтем 1" },
-  { id: "2", parent: 1, label: "Айтем 2" },
-  { id: 3, parent: 1, label: "Айтем 3" },
-  { id: 4, parent: "2", label: "Айтем 4" },
-  { id: 5, parent: "2", label: "Айтем 5" },
-  { id: 6, parent: "2", label: "Айтем 6" },
-  { id: 7, parent: 4, label: "Айтем 7" },
-  { id: 8, parent: 4, label: "Айтем 8" },
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  ValidationModule,
+  ColumnAutoSizeModule,
+  TreeDataModule,
+  TextEditorModule,
+  RenderApiModule,
+  PivotModule,
+  ColumnApiModule,
+  CellStyleModule,
 ]);
 
-// Column Definitions: Defines the columns to be displayed.
-const colDefs = ref([
+const gridApi = shallowRef<GridApi<TreeStoreItem> | null>(null);
+
+const { treeStore } = useTreeStore();
+
+const rowData = ref(treeStore.getAll());
+const editMode = ref(false);
+
+const myTheme = themeAlpine.withParams({
+  headerColumnBorderHeight: "100%",
+  headerColumnBorder: { color: "rgba(24, 26, 31, 0.15)", width: 1 },
+});
+
+const colDefs = ref<ColDef>([
   {
-    field: "id",
-    headerName: "№ п/п",
-    valueGetter: (p: ValueGetterParams) => {
-      console.log(p);
-      return +p.data.id;
+    field: "index",
+    headerName: "№ п\\п",
+    valueGetter: (params: ValueGetterParams) => params.node!.rowIndex! + 1,
+    lockPosition: "left",
+    width: 80,
+    maxWidth: 80,
+    cellClass: "text-bold",
+    resizable: false,
+  },
+  {
+    field: "label",
+    headerName: "Наименование",
+    editable: editMode,
+    cellClass: (params: CellClassParams) => {
+      return params.node.allChildrenCount ? "text-bold" : "";
     },
+    resizable: false,
   },
-  {
-    field: "category",
-    headerName: "Категория",
-    valueGetter: (p: ValueGetterParams) => p.data.make + " " + p.data.model,
-  },
-  { field: "label", headerName: "Наименование" },
 ]);
+
+const autoGroupColumnDef = ref<ColDef>({
+  minWidth: 200,
+  cellRendererParams: {
+    suppressCount: true,
+    editable: editMode,
+  },
+  headerName: "Категория",
+  valueGetter: (params: ValueGetterParams) =>
+    treeStore.getChildren(params.data.id).length > 0 ? "Группа" : "Элемент",
+  cellRenderer: CategoryCell,
+  resizable: false,
+});
+
+const getDataPath = (data: TreeStoreItem) => {
+  const path = [data.label];
+  let parent = treeStore.getItem(data.parent);
+  while (parent) {
+    path.unshift(parent.label);
+    parent = treeStore.getItem(parent.parent);
+  }
+  return path;
+};
+
+const toggleEditMode = () => {
+  editMode.value = !editMode.value;
+  colDefs.value[1].editable = editMode.value;
+};
+
+const editModeLabel = computed(() =>
+  editMode.value ? "Режим: просмотр" : "Режим: редактирование",
+);
+
+const onGridReady = (event: GridReadyEvent) => {
+  event.api.sizeColumnsToFit();
+  gridApi.value = event.api;
+};
+
+const onCellValueChanged = (event: CellChangedEvent<string>) => {
+  treeStore.updateItem(
+    { ...event.data, label: event.newValue },
+    { ...event.data, label: event.oldValue },
+  );
+  gridApi.value!.setGridOption("rowData", treeStore.getAll());
+  gridApi.value!.refreshCells({
+    force: true,
+  });
+};
+
+const getRowId = (params: GetRowIdParams) => `${params.data.id}`;
+
+const undo = async () => {
+  treeStore.undo();
+  gridApi.value!.setGridOption("rowData", treeStore.getAll());
+  gridApi.value!.refreshCells({
+    force: true,
+  });
+};
+
+const redo = async () => {
+  treeStore.redo();
+  gridApi.value!.setGridOption("rowData", treeStore.getAll());
+  gridApi.value!.refreshCells({
+    force: true,
+  });
+};
+
+defineExpose({
+  CategoryCell,
+});
 </script>
 
 <template>
-  <div style="height: 100%; display: flex; flex-direction: column">
-    <p style="flex: 0 1 0%">Theme:</p>
-    <div style="flex: 1 1 0%">
-      <AgGridVue
-        :row-data="rowData"
-        :column-defs="colDefs"
-        style="height: 100%"
+  <div class="data-table" style="height: 500px">
+    <div class="data-table_buttons">
+      <button class="edit-button" @click="toggleEditMode">
+        {{ editModeLabel }}
+      </button>
+      <button v-if="editMode" class="history-button" @click="undo">
+        <ArrowLeftIcon />
+      </button>
+      <button
+        v-if="editMode"
+        class="history-button history-button__right"
+        @click="redo"
       >
-      </AgGridVue>
+        <ArrowLeftIcon />
+      </button>
     </div>
+    <AgGridVue
+      tree-data
+      :get-data-path="getDataPath"
+      :row-data="rowData"
+      :column-defs="colDefs"
+      :auto-group-column-def="autoGroupColumnDef"
+      :group-default-expanded="-1"
+      :get-row-id="getRowId"
+      :theme="myTheme"
+      style="width: 100%; height: 100%"
+      @grid-ready="onGridReady"
+      @cell-value-changed="onCellValueChanged"
+    />
   </div>
 </template>
 
-<style scoped lang="scss"></style>
+<style lang="scss">
+:where(.ag-ltr) .ag-header-cell:last-child:after {
+  border-right: none;
+}
+
+.data-table {
+  --ag-header-column-resize-handle-height: 100%;
+  --ag-wrapper-border: none;
+  --ag-header-column-resize-handle-width: 1px;
+}
+
+.data-table_buttons {
+  display: flex;
+  margin-bottom: 20px;
+  height: 20px;
+  align-items: center;
+}
+
+.edit-button {
+  color: #2180ed;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 12px;
+  font-weight: 400;
+  margin-right: 20px;
+
+  &:hover {
+    color: rgba(33, 128, 237, 0.85);
+  }
+}
+
+.history-button {
+  color: #2180ed;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  width: 20px;
+  height: 20px;
+
+  &__right {
+    transform: rotate(180deg);
+  }
+
+  &:hover {
+    color: rgba(33, 128, 237, 0.85);
+  }
+}
+</style>
