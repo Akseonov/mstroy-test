@@ -90,7 +90,7 @@ export class TreeStore {
     while (current && current.parent !== null) {
       current = this.itemsMap.get(current.parent);
       if (current) {
-        result.unshift(current);
+        result.push(current);
       }
     }
 
