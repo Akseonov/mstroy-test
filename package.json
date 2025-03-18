@@ -10,7 +10,10 @@
     "type-check": "tsc -b",
     "lint": "eslint .",
     "prettier": "prettier .  -c",
-    "format": "prettier .  -w"
+    "format": "prettier .  -w",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "ag-grid-enterprise": "^33.1.1",
@@ -21,17 +24,20 @@
     "@eslint/js": "^9.22.0",
     "@types/node": "^22.13.10",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/coverage-v8": "^3.0.9",
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-vue": "^10.0.0",
     "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
     "prettier": "^3.5.3",
     "sass": "^1.85.1",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^6.2.0",
     "vite-svg-loader": "^5.1.0",
+    "vitest": "^3.0.9",
     "vue-eslint-parser": "^10.1.1",
     "vue-tsc": "^2.2.4"
   }
