@@ -146,7 +146,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="data-table" style="height: 500px">
+  <div class="data-table">
     <div class="data-table_buttons">
       <button class="edit-button" @click="toggleEditMode">
         {{ editModeLabel }}
@@ -181,6 +181,10 @@ defineExpose({
 <style lang="scss">
 :where(.ag-ltr) .ag-header-cell:last-child:after {
   border-right: none;
+}
+
+.ag-layout-normal {
+  height: 100% !important;
 }
 
 .data-table {
